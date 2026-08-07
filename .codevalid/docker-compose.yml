@@ -1,0 +1,92 @@
+services:
+  app:
+    build:
+      context: ..                          # repo root
+      dockerfile: .codevalid/Dockerfile
+    environment:
+      PORT: "6713"
+      APP_PORT: "6713"
+      # MySQL via toxiproxy (canonical port 3306)
+      PRISMA_DATABASE_CONNECTION_URL: "mysql://app:app@toxiproxy:3306/appdb"
+      # GitHub OAuth — all endpoints via toxiproxy → mock-oauth2-server (never live GitHub)
+      GITHUB_CLIENT_ID: "seed-github-client-id"
+      GITHUB_CLIENT_SECRET: "seed-github-client-secret"
+      GITHUB_REDIRECT_URI: "http://app:6713/auth/github/callback"
+      GITHUB_OAUTH_AUTHORIZATION_URL: "http://toxiproxy:9101/github/authorize"
+      GITHUB_OAUTH_TOKEN_URL: "http://toxiproxy:9101/github/token"
+      GITHUB_OAUTH_USERINFO_URL: "http://toxiproxy:9101/github/userinfo"
+      # App session
+      JWT_SECRET: "local-test-jwt-secret"
+      # Workspace gate — use mock fixture (mocks/workspace/users.json)
+      MOCK_WORKSPACE: "true"
+      ALLOWED_WORKSPACE_EMAILS: "admin@example.com,dev@example.com,github.user@example.com"
+      # Entrypoint: wait for toxiproxy-fronted MySQL and mock-oauth2-server
+      WAIT_FOR_TCP: "toxiproxy:3306 toxiproxy:9101 mysql:3306"
+      MIGRATE_CMD: "npx prisma migrate deploy"
+      SEED_ASSERTION_MESSAGE: "CODEVALID_SEED_OK"
+    ports:
+      - "6713:6713"
+    depends_on:
+      toxiproxy:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      mock-oauth2-server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6713/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks: [codevalid]
+
+  toxiproxy:
+    build:
+      context: ./toxiproxy
+      dockerfile: Dockerfile
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    ports:
+      - "8474:8474"
+    healthcheck:
+      test: ["CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:8474/version"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks: [codevalid]
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_DATABASE: appdb
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uapp", "-papp"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [codevalid]
+
+  mock-oauth2-server:
+    build:
+      context: ./mock-oauth2-server
+      dockerfile: Dockerfile
+    networks: [codevalid]
+
+  seed-test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: seed-test.Dockerfile
+      args:
+        CACHEBUST: "${CODEVALID_CACHEBUST:-20260807a}"
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "seed_test_cases/health_check.sh"]
+    networks: [codevalid]
+
+networks:
+  codevalid:

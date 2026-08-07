@@ -1,0 +1,4 @@
+[
+  { "name": "mysql",            "listen": "0.0.0.0:3306", "upstream": "mysql:3306",                   "enabled": true },
+  { "name": "github_identity",  "listen": "0.0.0.0:9101", "upstream": "mock-oauth2-server:8080",       "enabled": true }
+]

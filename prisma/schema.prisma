@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("PRISMA_DATABASE_CONNECTION_URL")
+}
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  name               String    @default("")
+  email              String    @unique @db.VarChar(320)
+  password           String    @default("")
+  role               Role      @default(DEVELOPER)
+  isActive           Boolean   @default(true)
+  isArchived         Boolean   @default(false)
+  preferences        Json?
+  auth0_user_id      String?   @db.VarChar(100)
+  githubAccessToken  String?   @db.VarChar(1024)
+  workspaceMemberId  Int       @default(0)
+  tasks              Task[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?    @db.Text
+  status      TaskStatus @default(TODO)
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+enum Role {
+  ADMIN
+  DEVELOPER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}

@@ -1,0 +1,36 @@
+{
+  "interactiveLogin": true,
+  "httpServer": "NettyWrapper",
+  "tokenCallbacks": [
+    {
+      "issuerId": "github",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "subject",
+          "match": "workspace",
+          "claims": {
+            "sub": "424242",
+            "email": "github.user@example.com",
+            "email_verified": true,
+            "name": "GitHub Workspace User",
+            "preferred_username": "github-workspace-user",
+            "aud": "${clientId}"
+          }
+        },
+        {
+          "requestParam": "subject",
+          "match": "nonworkspace",
+          "claims": {
+            "sub": "999999",
+            "email": "nonworkspace@otherdomain.com",
+            "email_verified": true,
+            "name": "Non Workspace User",
+            "preferred_username": "non-workspace-user",
+            "aud": "${clientId}"
+          }
+        }
+      ]
+    }
+  ]
+}

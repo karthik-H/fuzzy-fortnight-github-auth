@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+
+@theme {
+  --color-emerald-900: #064e3b;
+  --color-cream-100: #eeeeee;
+  --color-cream-200: #dddddd;
+  --color-deep-cream: #cccccc;
+  --color-neutral-500: #737373;
+  --color-neutral-950: #262626;
+  --color-deep-error-600: #dc2626;
+}
+
+:root {
+  --ui-primary: var(--color-emerald-900);
+  --ui-secondary: var(--color-cream-100);
+  --ui-error: var(--color-deep-error-600);
+  --ui-bg: var(--color-cream-100);
+  --ui-text: var(--color-neutral-950);
+  --ui-border: var(--color-emerald-900);
+}
+
+body {
+  overflow-y: scroll;
+}
